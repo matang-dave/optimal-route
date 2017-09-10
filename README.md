@@ -29,11 +29,13 @@ Setup environment :
 
 2.Run dockers from the dockerfile under optimal-route folder
 
-  docker-composer build 
-  docker-composer up -d
+    docker-composer build 
+    docker-composer up -d
 
-  Docker exposed port required to be free:
-
-  1. 80 - http
-  2. 443 - https
-  3. 27017 - mongodb
+    Docker exposed port required to be free:
+    1) 80 - http
+    2) 443 - https
+    3) 27017 - mongodb
+  
+3. chmod 755 -R  optimal-route/src/storage/
+ 
