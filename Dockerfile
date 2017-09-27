@@ -13,7 +13,7 @@ ENV APP_DIR /server/http
 ADD . ${APP_DIR}
 
 
-RUN (crontab -l ; echo "* * * * * php /server/http/optimal-route/src/artisan schedule:run >> /dev/null 2>&1") | crontab
+RUN (crontab -l ; echo "* * * * * php /server/http/src/artisan schedule:run >> /dev/null 2>&1") | crontab
  
 # Define current working directory.
 WORKDIR ${APP_DIR}
