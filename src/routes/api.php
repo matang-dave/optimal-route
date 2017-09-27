@@ -20,5 +20,3 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::get('/route/{id}','Route\RouteController@getRoute');
 
 Route::post('/route','Route\RouteController@createRoute');
-
-Route::put('/route','Route\RouteController@calculateOptimalRoute');
