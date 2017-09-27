@@ -41,32 +41,53 @@ class RouteService implements IRouteService
 	public function findRoute(string $uniqueId):RouteDTO {
 		
 		$route = $this->routeRepository->findRoute($uniqueId);
-		
 		$routeDTO  = new RouteDTO();
 		
-		if($route->getStatus() == RouteStatus::API_NEW || $route->getStatus() == RouteStatus::API_INPROGRESS) {
-			$routeDTO->setStatus(RouteStatus::UI_INPROGRESS);
+		if($route->getStatus() == RouteStatus::API_NEW) {
+			try {
+				$route->generateOptimalTravelPlan();
+				$route->setStatus(RouteStatus::API_CALCULATED);
+				
+				$routeDTO->setStatus(RouteStatus::UI_SUCCESS);
+				$routeDTO->setPath($route->getTravelPlan());
+				$routeDTO->setTotalDistance($route->getTotalTravelDistance());
+				$routeDTO->setTotalTravelTime($route->getTotalTravelTime());
+			}
+			catch(RouteException $e) {
+				$route->setStatus(RouteStatus::API_ERROR);
+				$route->setErrorMessage($e->getMessage());
+				$routeDTO->setStatus(RouteStatus::UI_ERROR);
+				
+			}
+			catch (\Exception $e) {
+				$route->setStatus(RouteStatus::API_ERROR);
+				$route->setErrorMessage(RouteExceptionMessage::UNKNOEN_ERROR);
+				$routeDTO->setStatus(RouteStatus::UI_ERROR);
+			}
+			finally{
+				$this->routeRepository->update($route);
+			}
 		}
-		else if ($route->getStatus() == RouteStatus::API_ERROR){
-			$routeDTO->setStatus(RouteStatus::UI_ERROR);
-		}
-		else {
+		else if($route->getStatus() == RouteStatus::API_CALCULATED){
 			$routeDTO->setStatus(RouteStatus::UI_SUCCESS);
 			$routeDTO->setPath($route->getTravelPlan());
 			$routeDTO->setTotalDistance($route->getTotalTravelDistance());
 			$routeDTO->setTotalTravelTime($route->getTotalTravelTime());
 		}
+		else if ($route->getStatus() == RouteStatus::API_ERROR){
+			$routeDTO->setStatus(RouteStatus::UI_ERROR);
+		}
+		
 		return $routeDTO;
 	}
 
-	
 	public function deleteOldRoute() {
 		$result = [];
 		try {
 			$this->routeRepository->deleteOldRoute(Route::TIME_TO_LIVE_SECONDS);
 			$result['success'] = 1;
 		}
-		catch(\Exception $e){
+		catch(\Exception $e){$routeDTO->setStatus(RouteStatus::UI_ERROR);
 			$result['success'] = 0;
 		}
 		return $result;
@@ -76,6 +97,7 @@ class RouteService implements IRouteService
 	 * 
 	 * {@inheritDoc}
 	 * @see \App\Service\Route\IRouteService::findOptmialTravelPlan()
+	 * @deprecated
 	 */
 	public function findOptmialTravelPlan() {
 		try {

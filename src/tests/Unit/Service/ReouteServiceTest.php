@@ -6,36 +6,59 @@ use App\Repository\Route\RouterRepository;
 use App\Constants\Route\RouteStatus;
 use App\Model\Route;
 use App\Model\OptimalRoute;
+use App\Exceptions\Route\RouteException;
 
 class RouteServiceTest extends TestCase {
 	
 	public function testFindRouteWithNewStatus() {
 		$app = $this->createApplication();
 		
-		$route = $app->make(Route::class);
-		$route->setStatus(RouteStatus::API_NEW);
+		$route = $this->createMock(OptimalRoute::class);
+		$route->expects($this->once())->method('generateOptimalTravelPlan')->willReturn(true);
+		$route->expects($this->once())->method('getStatus')->willReturn(RouteStatus::API_NEW);
 		$routeRepositrory = $this->createMock(RouterRepository::class);
+		$routeRepositrory->expects($this->once())->method('update')->willReturn(true);
 		$routeRepositrory->method('findRoute')->willReturn($route);
 		
 		$routeService = new RouteService($routeRepositrory);
 		$routeDto = $routeService->findRoute('abcd');
 		
-		$this->assertEquals(RouteStatus::UI_INPROGRESS, $routeDto->getStatus());
+		$this->assertEquals(RouteStatus::UI_SUCCESS, $routeDto->getStatus());
 	}
 	
-	public function testFindRouteWithInProgressStatus() {
+	public function testFindRouteWithNewStatusThrowsRouteException () {
 		$app = $this->createApplication();
 		
-		$route = $app->make(Route::class);
-		$route->setStatus(RouteStatus::API_INPROGRESS);
+		$route = $this->createMock(OptimalRoute::class);
+		$route->expects($this->once())->method('generateOptimalTravelPlan')->willThrowException(new RouteException("message"));
+		$route->expects($this->once())->method('getStatus')->willReturn(RouteStatus::API_NEW);
 		$routeRepositrory = $this->createMock(RouterRepository::class);
-		$routeRepositrory->expects($this->once())->method('findRoute')->willReturn($route);
+		$routeRepositrory->expects($this->once())->method('update')->willReturn(true);
+		$routeRepositrory->method('findRoute')->willReturn($route);
 		
 		$routeService = new RouteService($routeRepositrory);
 		$routeDto = $routeService->findRoute('abcd');
 		
-		$this->assertEquals(RouteStatus::UI_INPROGRESS, $routeDto->getStatus());
+		$this->assertEquals(RouteStatus::UI_ERROR, $routeDto->getStatus());
 	}
+	
+	
+	public function testFindRouteWithNewStatusThrowsException () {
+		$app = $this->createApplication();
+		
+		$route = $this->createMock(OptimalRoute::class);
+		$route->expects($this->once())->method('generateOptimalTravelPlan')->willThrowException(new \Exception("message"));
+		$route->expects($this->once())->method('getStatus')->willReturn(RouteStatus::API_NEW);
+		$routeRepositrory = $this->createMock(RouterRepository::class);
+		$routeRepositrory->expects($this->once())->method('update')->willReturn(true);
+		$routeRepositrory->method('findRoute')->willReturn($route);
+		
+		$routeService = new RouteService($routeRepositrory);
+		$routeDto = $routeService->findRoute('abcd');
+		
+		$this->assertEquals(RouteStatus::UI_ERROR, $routeDto->getStatus());
+	}
+	
 	
 	public function testFindRouteWithCalculatedStatus() {
 		$app = $this->createApplication();

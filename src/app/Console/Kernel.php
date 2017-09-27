@@ -24,7 +24,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-    	$schedule->command('calculate-optimal-route')->everyMinute()->withoutOverlapping();
     	$schedule->command('delete-old-route')->hourly()->withoutOverlapping();
     }
 

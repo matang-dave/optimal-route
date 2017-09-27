@@ -23,47 +23,108 @@ class GoogleDistanceCalculator extends DistanceCalculator
 	 */
 	CONST API_URL = 'https://maps.googleapis.com/maps/api/directions/json?';
 	
+	
+	CONST DISNTANCE_MATRIX_URL = 'https://maps.googleapis.com/maps/api/distancematrix/json?';
+	
 	/**
 	 * 
 	 * {@inheritDoc}
 	 * @see \App\Model\DistanceCalculator::finDistanceMatrix()
 	 */
 	public function findOptimalTravelRoute(Route $route):array {
-		
-		$destinationCoordinates = $route->getDestinations();
-		$destinationCount = count($destinationCoordinates);
+		$destinationCoordinates = $route->getDestinations ();
+		$destinationCount = count ( $destinationCoordinates );
 		
 		$minDistance = PHP_INT_MAX;
 		$minTravelTime = PHP_INT_MAX;
-		$optimalWayPoints[] = [];
+		$optimalWayPoints [] = [ ];
 		
-		$currentIndex = 0;
-		foreach ($destinationCoordinates as $destinationCoordinate) {
-			//generate url as current coordinate as destinations and other as middle
-			$url = $this->generateUrl($route,$currentIndex);
-			//fetch response
-			$response= $this->queryUrl($url);
-			
-			list($totalDistance,$totalTravelTime,$wayPoints) = $this->findMinimumDistanceAndTime($response);
-			//if current route's distance is less than 
-			// minimum distacne, currnet route is the optimal route
-			if($totalDistance<$minDistance) {
-				$minDistance = $totalDistance;
-				$minTravelTime = $totalTravelTime;
-				// update the destination coordinates's index
-				for($i=0;$i<count($wayPoints);$i++) {
-					if($wayPoints[$i]>=$currentIndex) {
-						$wayPoints[$i] = $wayPoints[$i]+1;
-					}
-				}
-				$wayPoints[] = $currentIndex;
-				$optimalWayPoints = $wayPoints;
-				
+		
+		$farestDestinationIndex = $this->findFarestDestinationIndex ( $route );
+		$destinationCoordinate = $destinationCoordinates [$farestDestinationIndex];
+		// generate url as current coordinate as destinations and other as middle
+		$url = $this->generateUrl ( $route, $farestDestinationIndex );
+		// fetch response
+		$response = $this->queryUrl ( $url );
+		
+		list ( $minDistance, $minTravelTime, $wayPoints ) = $this->findMinimumDistanceAndTime ( $response );
+		// if current route's distance is less than
+		// minimum distacne, currnet route is the optimal route
+		
+		for($i = 0; $i < count ( $wayPoints ); $i ++) {
+			if ($wayPoints [$i] >= $farestDestinationIndex) {
+				$wayPoints [$i] = $wayPoints [$i] + 1;
 			}
-			//increment currnet index value
-			$currentIndex++;
 		}
-		return [$minDistance,$minTravelTime,$optimalWayPoints];
+		
+		$wayPoints [] = $farestDestinationIndex;
+		$optimalWayPoints = $wayPoints;
+		
+		return [ 
+				$minDistance,
+				$minTravelTime,
+				$optimalWayPoints 
+		];
+	}
+	
+	/**
+	 * find index of the farest destination index from the origin
+	 * 
+	 * @param Route $route
+	 * @return int
+	 */
+	private function findFarestDestinationIndex(Route $route):int{
+		
+		$url = self::DISNTANCE_MATRIX_URL.'key='.self::APPLICATION_KEY.'&origins='.
+				$route->getOrigin()->getLatitude().",".$route->getOrigin()->getLongitude();
+		
+		$url.='&destinations=';
+		$destinations = $route->getDestinations();
+		foreach ($destinations as $destination) {
+			$url.=
+			$destination->getLatitude().",".$destination->getLongitude().'|';
+		}
+		
+		$url = rtrim($url,'|');
+		
+		$response = $this->queryUrl($url);
+		
+		$this->validateResponse($response);
+		
+		$maxDistnce = 0;
+		$maxDistanceIndex = 0;
+		
+		for($i=0; $i<count($response['rows'][0]['elements']);$i++){
+			$element = $response['rows'][0]['elements'][$i];
+			if($element['distance']['value']>$maxDistnce) {
+				$maxDistnce = $element['distance']['value'];
+				$maxDistanceIndex = $i;
+			}
+		}
+		
+		return $maxDistanceIndex;
+		
+	}
+	
+	/**
+	 * 
+	 * @param unknown $response
+	 * @throws RouteException
+	 */
+	private function validateResponse($response){
+		
+		switch ($response['status']) {
+			
+			case 'INVALID_REQUEST':
+				throw new RouteException(RouteExceptionMessage::INVALID_REQUEST);
+			case 'MAX_ELEMENTS_EXCEEDED':
+				throw new RouteException(RouteExceptionMessage::MAX_ELEMENTS_EXCEEDED);
+			case 'OVER_QUERY_LIMIT':
+				throw new RouteException(RouteExceptionMessage::MAX_QUERY_LIMIT_EXCEEDED);
+			case 'REQUEST_DENIED':
+			case 'UNKNOWN_ERROR':
+				throw new RouteException(RouteExceptionMessage::MAX_QUERY_LIMIT_EXCEEDED);
+		}
 	}
 	
 	/**
@@ -125,19 +186,8 @@ class GoogleDistanceCalculator extends DistanceCalculator
 	 */
 	private function findMinimumDistanceAndTime($response) {
 		
-		switch ($response['status']) {
-			
-			case 'INVALID_REQUEST':
-				throw new RouteException(RouteExceptionMessage::INVALID_REQUEST);
-			case 'MAX_ELEMENTS_EXCEEDED':
-				throw new RouteException(RouteExceptionMessage::MAX_ELEMENTS_EXCEEDED);
-			case 'OVER_QUERY_LIMIT':
-				throw new RouteException(RouteExceptionMessage::MAX_QUERY_LIMIT_EXCEEDED);
-			case 'REQUEST_DENIED':
-			case 'UNKNOWN_ERROR':
-				throw new RouteException(RouteExceptionMessage::MAX_QUERY_LIMIT_EXCEEDED);
-		}
 		
+		$this->validateResponse($response);
 		
 		$minDistance = PHP_INT_MAX;
 		$minTime = PHP_INT_MAX;
