@@ -8,19 +8,119 @@ Tech stack :
 * Mongo db
 * Docker
 
-Framework:
-Laravel
+Frameworks :
+* Laravel
+* PHP Unit
 
-Exposed endpoints:
+## Exposed endpoints
 
-1. localhost/api/route/${token} - GET
-2. localhost/api/route - POST
+Method:  
+ - `POST`
 
-Cron jobs:
-1. Generate optimal route
-2. Delete old routes from the history
+URL path:  
+ - `/route`
 
-Setup environment :
+Input body:  
+
+```json
+[
+	["ROUTE_START_LATITUDE", "ROUTE_START_LONGITUDE"],
+	["DROPOFF_LATITUDE_#1", "DROPOFF_LONGITUDE_#1"],
+	...
+]
+```
+
+Response body:  
+ - `HTTP code 200`  
+
+```json
+{ "token": "TOKEN" }
+```
+
+or
+
+```json
+{ "error": "ERROR_DESCRIPTION" }
+```
+
+---
+
+Input body example:
+
+```json
+[
+	["22.372081", "114.107877"],
+	["22.284419", "114.159510"],
+	["22.326442", "114.167811"]
+]
+```
+
+Response example:
+
+```json
+{ "token": "9d3503e0-7236-4e47-a62f-8b01b5646c16" }
+```
+
+### Get shortest driving route
+Get shortest driving route for submitted locations (sequence of `[lat, lon]` values starting from start location resulting in shortest path)
+
+Method:  
+- `GET`
+
+URL path:  
+- `/route/<TOKEN>`
+
+Response body:  
+- HTTP 200  
+
+```json
+{
+	"status": "success",
+	"path": [
+		["ROUTE_START_LATITUDE", "ROUTE_START_LONGITUDE"],
+		["DROPOFF_LATITUDE_#1", "DROPOFF_LONGITUDE_#1"],
+		...
+	],
+	"total_distance": DRIVING_DISTANCE_IN_METERS,
+	"total_time": ESTIMATED_DRIVING_TIME_IN_SECONDS
+}
+```  
+or  
+
+```json
+{
+	"status": "in progress"
+}
+```  
+or  
+
+```json
+{
+	"status": "failure",
+	"error": "ERROR_DESCRIPTION"
+}
+```
+
+---
+
+URL example:  
+ - `/route/9d3503e0-7236-4e47-a62f-8b01b5646c16`
+
+Response example:  
+```json
+{
+	"status": "success",
+	"path": [
+		["22.372081", "114.107877"],
+		["22.326442", "114.167811"],
+		["22.284419", "114.159510"]
+	],
+	"total_distance": 20000,
+	"total_time": 1800
+}
+```
+
+## Setup environment :
 
 1.Run composer
 
