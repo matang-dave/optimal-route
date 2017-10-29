@@ -1,5 +1,4 @@
 # optimal-route
-Find optimal route for provided geo loactions
 
 Objective : Find optimal route for given input coordinates using google directions api
 
@@ -7,6 +6,7 @@ Tech stack :
 PHP
 Nginx
 MongoDb
+Docker
 
 Framework:
 Laravel
@@ -17,7 +17,6 @@ Exposed endpoints:
 2. localhost/api/route - POST
 
 Cron jobs:
-
 1. Generate optimal route
 2. Delete old routes from the history
 
