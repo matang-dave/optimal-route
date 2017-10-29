@@ -3,10 +3,10 @@
 Objective : Find optimal route for given input coordinates using google directions api
 
 Tech stack :
-PHP
-Nginx
-MongoDb
-Docker
+* PHP 7
+* Nginx
+* Mongo db
+* Docker
 
 Framework:
 Laravel
