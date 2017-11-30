@@ -124,12 +124,12 @@ Response example:
 
 1.Run composer
 
-  optimal-route/src/composer install --require-dev
+  optimal-route/src/composer install
 
 2.Run dockers from the dockerfile under optimal-route folder
 
-    docker-composer build 
-    docker-composer up -d
+    docker-compose build 
+    docker-compose up -d
 
     Docker exposed port required to be free:
     1) 80 - http
